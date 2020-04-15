@@ -1,5 +1,5 @@
 /*
- * iperf, Copyright (c) 2014-2019, The Regents of the University of
+ * iperf, Copyright (c) 2014-2020, The Regents of the University of
  * California, through Lawrence Berkeley National Laboratory (subject
  * to receipt of any required approvals from the U.S. Dept. of
  * Energy).  All rights reserved.
@@ -62,6 +62,10 @@
 #include <sys/param.h>
 #include <sys/cpuset.h>
 #endif /* HAVE_CPUSET_SETAFFINITY */
+
+#if defined(__CYGWIN__) || defined(_WIN32) || defined(_WIN64) || defined(__WINDOWS__)
+#define CPU_SETSIZE __CPU_SETSIZE
+#endif /* __CYGWIN__, _WIN32, _WIN64, __WINDOWS__ */
 
 #if defined(HAVE_SETPROCESSAFFINITYMASK)
 #include <Windows.h>
@@ -769,7 +773,7 @@ iperf_on_connect(struct iperf_test *test)
             }
         }
         if (test->settings->rate)
-            iperf_printf(test, "      Target Bitrate: %llu\n", test->settings->rate);
+            iperf_printf(test, "      Target Bitrate: %"PRIu64"\n", test->settings->rate);
     }
 }
 
@@ -1846,8 +1850,8 @@ get_parameters(struct iperf_test *test)
 #endif //HAVE_SSL
 	if (test->mode && test->protocol->id == Ptcp && has_tcpinfo_retransmits())
 	    test->sender_has_retransmits = 1;
-    if (test->settings->rate)
-        cJSON_AddNumberToObject(test->json_start, "target_bitrate", test->settings->rate);
+	if (test->settings->rate)
+	    cJSON_AddNumberToObject(test->json_start, "target_bitrate", test->settings->rate);
 	cJSON_Delete(j);
     }
     return r;
