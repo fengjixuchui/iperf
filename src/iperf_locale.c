@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------- 
- * iperf, Copyright (c) 2014-2018, The Regents of the University of
+ * iperf, Copyright (c) 2014-2020, The Regents of the University of
  * California, through Lawrence Berkeley National Laboratory (subject
  * to receipt of any required approvals from the U.S. Dept. of
  * Energy).  All rights reserved.
@@ -125,11 +125,11 @@ const char usage_longstr[] = "Usage: iperf3 [-s|-c host] [options]\n"
 #endif //HAVE_SSL
                            "Client specific:\n"
                            "  -c, --client    <host>    run in client mode, connecting to <host>\n"
-#if defined(HAVE_SCTP)
+#if defined(HAVE_SCTP_H)
                            "  --sctp                    use SCTP rather than TCP\n"
                            "  -X, --xbind <name>        bind SCTP association to links\n"
                            "  --nstreams      #         number of SCTP streams\n"
-#endif /* HAVE_SCTP */
+#endif /* HAVE_SCTP_H */
                            "  -u, --udp                 use UDP rather than TCP\n"
                            "  --connect-timeout #       timeout for control connection setup (ms)\n"
                            "  -b, --bitrate #[KMG][/#]  target bitrate in bits/sec (0 for unlimited)\n"
@@ -272,10 +272,10 @@ const char report_time[] =
 const char report_connecting[] =
 "Connecting to host %s, port %d\n";
 
-const char report_authetication_successed[] =
+const char report_authentication_succeeded[] =
 "Authentication successed for user '%s' ts %ld\n";
 
-const char report_authetication_failed[] =
+const char report_authentication_failed[] =
 "Authentication failed for user '%s' ts %ld\n";
 
 const char report_reverse[] =
