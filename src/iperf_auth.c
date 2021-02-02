@@ -35,6 +35,8 @@
 #define _WITH_GETLINE
 #include <stdio.h>
 #include <termios.h>
+#include <inttypes.h>
+#include <stdint.h>
 
 #if defined(HAVE_SSL)
 
@@ -45,7 +47,7 @@
 #include <openssl/buffer.h>
 #include <openssl/err.h>
 
-const char *auth_text_format = "user: %s\npwd:  %s\nts:   %ld";
+const char *auth_text_format = "user: %s\npwd:  %s\nts:   %"PRId64;
 
 void sha256(const char *string, char outputBuffer[65])
 {
@@ -62,10 +64,10 @@ void sha256(const char *string, char outputBuffer[65])
     outputBuffer[64] = 0;
 }
 
-int check_authentication(const char *username, const char *password, const time_t ts, const char *filename){
+int check_authentication(const char *username, const char *password, const time_t ts, const char *filename, int skew_threshold){
     time_t t = time(NULL);
     time_t utc_seconds = mktime(localtime(&t));
-    if ( (utc_seconds - ts) > 10 || (utc_seconds - ts) < -10 ) {
+    if ( (utc_seconds - ts) > skew_threshold || (utc_seconds - ts) < -skew_threshold ) {
         return 1;
     }
 
@@ -174,6 +176,7 @@ EVP_PKEY *load_pubkey_from_base64(const char *buffer) {
 
     BIO* bio = BIO_new(BIO_s_mem());
     BIO_write(bio, key, key_len);
+    free(key);
     EVP_PKEY *pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
     BIO_free(bio);
     return (pkey);
@@ -199,6 +202,7 @@ EVP_PKEY *load_privkey_from_base64(const char *buffer) {
 
     BIO* bio = BIO_new(BIO_s_mem());
     BIO_write(bio, key, key_len);
+    free(key);
     EVP_PKEY *pkey = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
     BIO_free(bio);
     return (pkey);
@@ -289,7 +293,7 @@ int encode_auth_setting(const char *username, const char *password, EVP_PKEY *pu
     if (text == NULL) {
 	return -1;
     }
-    snprintf(text, text_len, auth_text_format, username, password, utc_seconds);
+    snprintf(text, text_len, auth_text_format, username, password, (int64_t)utc_seconds);
 
     unsigned char *encrypted = NULL;
     int encrypted_len;
@@ -304,10 +308,11 @@ int encode_auth_setting(const char *username, const char *password, EVP_PKEY *pu
     return (0); //success
 }
 
-int decode_auth_setting(int enable_debug, char *authtoken, EVP_PKEY *private_key, char **username, char **password, time_t *ts){
+int decode_auth_setting(int enable_debug, const char *authtoken, EVP_PKEY *private_key, char **username, char **password, time_t *ts){
     unsigned char *encrypted_b64 = NULL;
     size_t encrypted_len_b64;
-    Base64Decode(authtoken, &encrypted_b64, &encrypted_len_b64);        
+    int64_t utc_seconds;
+    Base64Decode(authtoken, &encrypted_b64, &encrypted_len_b64);
 
     unsigned char *plaintext = NULL;
     int plaintext_len;
@@ -329,7 +334,7 @@ int decode_auth_setting(int enable_debug, char *authtoken, EVP_PKEY *private_key
 	return -1;
     }
 
-    int rc = sscanf((char *) plaintext, auth_text_format, s_username, s_password, ts);
+    int rc = sscanf((char *) plaintext, auth_text_format, s_username, s_password, &utc_seconds);
     if (rc != 3) {
 	free(s_password);
 	free(s_username);
@@ -342,6 +347,7 @@ int decode_auth_setting(int enable_debug, char *authtoken, EVP_PKEY *private_key
     }
     *username = s_username;
     *password = s_password;
+    *ts = (time_t)utc_seconds;
     OPENSSL_free(plaintext);
     return (0);
 }

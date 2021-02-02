@@ -24,7 +24,7 @@
 # file for complete information.
 
 # Initialize the autoconf system for the specified tool, version and mailing list
-AC_INIT(iperf, 3.8.1, https://github.com/esnet/iperf, iperf, https://software.es.net/iperf/)
+AC_INIT(iperf, 3.9+, https://github.com/esnet/iperf, iperf, https://software.es.net/iperf/)
 m4_include([config/ax_check_openssl.m4])
 m4_include([config/iperf_config_static_bin.m4])
 AC_LANG(C)
@@ -58,9 +58,7 @@ fi
 
 # Check if enable profiling
 AC_ARG_ENABLE([profiling],
-    AS_HELP_STRING([--enable-profiling], [Enable iperf3 profiling binary]),
-    [enable_profiling=yes],
-    [:])
+    AS_HELP_STRING([--enable-profiling], [Enable iperf3 profiling binary]))
 AM_CONDITIONAL([ENABLE_PROFILING], [test x$enable_profiling = xyes])
 
 # Checks for header files.
@@ -224,6 +222,19 @@ AC_EGREP_CPP(yes,
 ],iperf3_cv_header_so_max_pacing_rate=yes,iperf3_cv_header_so_max_pacing_rate=no))
 if test "x$iperf3_cv_header_so_max_pacing_rate" = "xyes"; then
     AC_DEFINE([HAVE_SO_MAX_PACING_RATE], [1], [Have SO_MAX_PACING_RATE sockopt.])
+fi
+
+# Check for SO_BINDTODEVICE sockopt (believed to be Linux only)
+AC_CACHE_CHECK([SO_BINDTODEVICE socket option],
+[iperf3_cv_header_so_bindtodevice],
+AC_EGREP_CPP(yes,
+[#include <sys/socket.h>
+#ifdef SO_BINDTODEVICE
+  yes
+#endif
+],iperf3_cv_header_so_bindtodevice=yes,iperf3_cv_header_so_bindtodevice=no))
+if test "x$iperf3_cv_header_so_bindtodevice" = "xyes"; then
+    AC_DEFINE([HAVE_SO_BINDTODEVICE], [1], [Have SO_BINDTODEVICE sockopt.])
 fi
 
 # Check if we need -lrt for clock_gettime
